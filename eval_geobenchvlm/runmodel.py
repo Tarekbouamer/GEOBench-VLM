@@ -1,58 +1,50 @@
 #!/usr/bin/env python3
-"""run_models.py
+"""runmodel.py — dispatch eval to a model module and call main() directly.
 
 Usage
 -----
-python runmodel.py <model-key> [any other args the target script expects]
+python runmodel.py <model-key> --data_path PATH --results_dir PATH [--max_samples N]
 
-Example:
-    python runmodel.py llava1pt5 --data_path /datasets/GEOBench-VLM
-
-Supported model keys to script files
-----------------------------------
-llava1pt5 = llava1pt5_cls_single.py
-llava1pt6 = llava1pt6_cls_single.py
-llavaone1 = llavaone1_cls_single.py
-qwen      = qwen_cls_single.py
-internvl  = internvl_cls_single.py
+Model keys
+----------
+llava1pt5 | llava1pt6 | llavaone1 | qwen | internvl | lfm
 """
 
-import subprocess
+import argparse
+import importlib
+import os
 import sys
-from pathlib import Path
 
-MODEL2SCRIPT = {
-    "llava1pt5": "llava1pt5_cls_single.py",
-    "llava1pt6": "llava1pt6_cls_single.py",
-    "llavaone1": "llavaone1_cls_single.py",
-    "qwen": "qwen_cls_single.py",
-    "internvl": "internvl_cls_single.py",
-    "lfm": "lfm_cls_single.py",
+MODEL2MODULE = {
+    "llava1pt5": "llava1pt5_cls_single",
+    "llava1pt6": "llava1pt6_cls_single",
+    "llavaone1": "llavaone1_cls_single",
+    "qwen":      "qwen_cls_single",
+    "internvl":  "internvl_cls_single",
+    "lfm":       "lfm_cls_single",
 }
 
+# Ensure the directory containing this file is on sys.path so imports work
+# whether this script is run directly or imported from a notebook.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
 
-def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python run_models.py <model-key> [extra args...]\n",
-              "Model‑keys:", ", ".join(MODEL2SCRIPT), file=sys.stderr)
-        sys.exit(1)
 
-    model_key, *extra = sys.argv[1:]
-    script_name = MODEL2SCRIPT.get(model_key)
-    if script_name is None:
-        print(f"✗ Unknown model-key '{model_key}'. Choose one of:",
-              ", ".join(MODEL2SCRIPT), file=sys.stderr)
-        sys.exit(1)
-
-    # Make sure the script exists next to this dispatcher.
-    if not Path(script_name).exists():
-        print(
-            f"✗ Script '{script_name}' not found in current directory.", file=sys.stderr)
-        sys.exit(1)
-
-    # Forward execution to the underlying script (inherits stdout/stderr).
-    subprocess.run([sys.executable, script_name, *extra], check=True)
+def run(model_key: str, data_path: str, results_dir: str, max_samples=None):
+    module_name = MODEL2MODULE.get(model_key)
+    if module_name is None:
+        raise ValueError(
+            f"Unknown model key '{model_key}'. Choose from: {', '.join(MODEL2MODULE)}")
+    mod = importlib.import_module(module_name)
+    mod.main(data_path, results_dir, max_samples)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("model_key", choices=MODEL2MODULE)
+    parser.add_argument("--data_path", required=True)
+    parser.add_argument("--results_dir", required=True)
+    parser.add_argument("--max_samples", type=int, default=None)
+    args = parser.parse_args()
+    run(args.model_key, args.data_path, args.results_dir, args.max_samples)
