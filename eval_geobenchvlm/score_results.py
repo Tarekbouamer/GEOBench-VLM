@@ -3,13 +3,14 @@ import collections
 import json
 import os
 
-MODEL_RESULT_FOLDERS = {
-    "Results-qwen2-countcls":         "Qwen2-VL-7B",
-    "Results-lfm25-vl":               "LFM2.5-VL-450M",
-    "Results-llava1pt5-countcls":     "LLaVA-1.5-7B",
-    "Results-llava1pt6-countcls":     "LLaVA-1.6-7B",
-    "Results-llavaOne-countcls":      "LLaVA-OneVision-7B",
-    "Results-llavaInternVL-countcls": "InternVL2-8B",
+# Human-readable display names for known model slugs (folder names under results/)
+MODEL_DISPLAY_NAMES = {
+    "qwen2-vl-7b":         "Qwen2-VL-7B",
+    "lfm2.5-vl-450m":      "LFM2.5-VL-450M",
+    "llava-1.5-7b":        "LLaVA-1.5-7B",
+    "llava-1.6-7b":        "LLaVA-1.6-7B",
+    "llava-onevision-7b":  "LLaVA-OneVision-7B",
+    "internvl2-8b":        "InternVL2-8B",
 }
 
 
@@ -50,17 +51,23 @@ def score_results(results: list) -> tuple[dict, dict]:
     return dict(task_correct), dict(task_total)
 
 
-def find_result_files(data_path: str) -> dict[str, str]:
-    """Return {model_name: json_file_path} for every results folder found."""
-    found = {}
-    for folder_name, model_name in MODEL_RESULT_FOLDERS.items():
-        folder_path = os.path.join(data_path, folder_name)
-        if not os.path.isdir(folder_path):
+def find_result_files(results_dir: str) -> dict[str, str]:
+    """Scan results_dir for model-slug subdirs containing *.json files.
+
+    Returns {display_name: json_file_path} for every model found.
+    Multiple JSON files in a model dir are all loaded and merged.
+    """
+    found: dict[str, list[str]] = {}
+    if not os.path.isdir(results_dir):
+        return {}
+    for slug in sorted(os.listdir(results_dir)):
+        model_dir = os.path.join(results_dir, slug)
+        if not os.path.isdir(model_dir):
             continue
-        for fname in os.listdir(folder_path):
-            if fname.endswith(".json"):
-                found[model_name] = os.path.join(folder_path, fname)
-                break   
+        json_files = [f for f in os.listdir(model_dir) if f.endswith(".json")]
+        if json_files:
+            display = MODEL_DISPLAY_NAMES.get(slug, slug)
+            found[display] = [os.path.join(model_dir, f) for f in sorted(json_files)]
     return found
 
 
@@ -106,26 +113,30 @@ def build_table(all_scores: dict) -> str:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path", required=True,
-                        help="Root dataset folder (contains Results-* subfolders)")
+    parser.add_argument("--results_dir", required=True,
+                        help="Directory containing model-slug subfolders with JSON results")
     parser.add_argument("--output_dir", default=None,
-                        help="Where to save scores.json and scores.csv (default: data_path)")
+                        help="Where to save scores.json and scores.csv (default: results_dir)")
     args = parser.parse_args()
 
-    output_dir = args.output_dir or args.data_path
+    results_dir = args.results_dir
+    output_dir = args.output_dir or results_dir
     os.makedirs(output_dir, exist_ok=True)
 
-    result_files = find_result_files(args.data_path)
+    result_files = find_result_files(results_dir)
     if not result_files:
         print("No result JSON files found. Run eval scripts first.")
         return
 
     all_scores = {}
 
-    for model_name, json_path in sorted(result_files.items()):
-        print(f"Scoring {model_name} from {json_path} ...")
-        with open(json_path) as f:
-            results = json.load(f)
+    for model_name, json_paths in sorted(result_files.items()):
+        # Merge results from all split files for this model
+        results = []
+        for json_path in json_paths:
+            print(f"Scoring {model_name} from {json_path} ...")
+            with open(json_path) as f:
+                results.extend(json.load(f))
 
         task_correct, task_total = score_results(results)
 

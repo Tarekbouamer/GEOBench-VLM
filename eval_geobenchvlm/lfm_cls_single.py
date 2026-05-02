@@ -165,7 +165,7 @@ def evaluate(model, dataloader, processor, device):
     return results
 
 
-def evaluate_folder(folder_path, max_samples=None):
+def evaluate_folder(folder_path, results_dir, max_samples=None):
     qa_file_path = None
     potential_path = os.path.join(folder_path, "Single", "qa.json")
     if os.path.exists(potential_path):
@@ -217,13 +217,12 @@ def evaluate_folder(folder_path, max_samples=None):
     processor = AutoProcessor.from_pretrained(pth_m)
     scores = evaluate(model, dataloader, processor, device)
 
-    result_folder = os.path.join(folder_path, "Results-lfm25-vl")
+    result_folder = os.path.join(results_dir, "lfm2.5-vl-450m")
     os.makedirs(result_folder, exist_ok=True)
 
-    result_file = os.path.join(
-        result_folder, f"evaluation_results_{os.path.basename(folder_path)}.json")
-    result_filet = os.path.join(
-        result_folder, f"evaluation_results_{os.path.basename(folder_path)}.txt")
+    split_name = os.path.basename(folder_path)
+    result_file = os.path.join(result_folder, f"lfm2.5-vl-450m_{split_name}.json")
+    result_filet = os.path.join(result_folder, f"lfm2.5-vl-450m_{split_name}.txt")
 
     try:
         with open(result_file, "w") as f:
@@ -236,11 +235,11 @@ def evaluate_folder(folder_path, max_samples=None):
     print(f"Results saved successfully for folder {folder_path}.")
 
 
-def main(base_folder_path, max_samples=None):
+def main(base_folder_path, results_dir, max_samples=None):
     folder_path = base_folder_path
     print(folder_path)
     if os.path.isdir(folder_path):
-        evaluate_folder(folder_path, max_samples)
+        evaluate_folder(folder_path, results_dir, max_samples)
     else:
         print(f"{folder_path} is not a directory. Skipping.")
 
@@ -248,8 +247,10 @@ def main(base_folder_path, max_samples=None):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path", default="/datasets/GEOBench-VLM")
+    parser.add_argument("--data_path", required=True)
+    parser.add_argument("--results_dir", required=True,
+                        help="Directory to save evaluation results")
     parser.add_argument("--max_samples", type=int, default=None,
                         help="Limit number of questions (for smoke testing)")
     args = parser.parse_args()
-    main(args.data_path, args.max_samples)
+    main(args.data_path, args.results_dir, args.max_samples)

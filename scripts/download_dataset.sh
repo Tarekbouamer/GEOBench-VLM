@@ -15,7 +15,10 @@ for zip in "$DATASET_DIR"/*.zip; do
     folder="${zip%.zip}"
     if [ ! -d "$folder" ]; then
         echo "  Extracting $(basename "$zip")..."
+        t0=$(date +%s)
         unzip -q "$zip" -d "$DATASET_DIR"
+        t1=$(date +%s)
+        echo "    Done in $((t1 - t0))s."
     else
         echo "  $(basename "$folder")/ already extracted, skipping."
     fi
