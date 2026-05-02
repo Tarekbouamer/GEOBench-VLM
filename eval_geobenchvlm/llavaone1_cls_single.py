@@ -2,37 +2,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-import requests
-from io import BytesIO
 import pandas as pd
 import os
 import json
 from tqdm import tqdm
 from PIL import Image
-from llava.model.builder import load_pretrained_model
-from llava.mm_utils import process_images, tokenizer_image_token
-from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN
-from llava.conversation import conv_templates, SeparatorStyle
 import copy
 from collections import defaultdict
-
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-print(device)
-
-pathm = os.path.join(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))), 'Out_weights', 'llava-onevision-qwen2-7b-si')
-
-# pretrained = "lmms-lab/llava-onevision-qwen2-7b-si"
-model_name = "llava_qwen"
-# device_map = device
-device_map = device
-tokenizer, model, image_processor, max_length = load_pretrained_model(
-    pathm, None, model_name, device_map=device_map, attn_implementation="sdpa")  # Add any other thing you want to pass in llava_model_args
-
-model.eval()
-model.to(device)
 
 
 class MultimodalDataset(Dataset):
@@ -122,7 +98,10 @@ def collate_fn(batch):
     }
 
 
-def evaluate(model, dataloader, processor, device):
+def evaluate(model, tokenizer, image_processor, dataloader, device):
+    from llava.mm_utils import process_images, tokenizer_image_token
+    from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN
+    from llava.conversation import conv_templates, SeparatorStyle
     model.eval()
     results = []
 
@@ -216,7 +195,7 @@ def evaluate(model, dataloader, processor, device):
     return results
 
 
-def evaluate_folder(folder_path, results_dir, max_samples=None):
+def evaluate_folder(folder_path, results_dir, model, tokenizer, image_processor, device, max_samples=None):
     qa_file_path = None
     for filename in ["qa.json"]:
         potential_path = os.path.join(folder_path, "Single", filename)
@@ -269,7 +248,7 @@ def evaluate_folder(folder_path, results_dir, max_samples=None):
     dataloader = DataLoader(dataset, batch_size=1,
                             shuffle=False, collate_fn=collate_fn)
 
-    scores = evaluate(model, dataloader, None, device)
+    scores = evaluate(model, tokenizer, image_processor, dataloader, device)
     result_folder = os.path.join(results_dir, "llava-onevision-7b")
     os.makedirs(result_folder, exist_ok=True)
 
@@ -292,12 +271,24 @@ def evaluate_folder(folder_path, results_dir, max_samples=None):
 
 # Main function to iterate over folders
 def main(base_folder_path, results_dir, max_samples=None):
-    # for folder in os.listdir(base_folder_path):
-    # folder_path = os.path.join(base_folder_path, folder)
+    from llava.model.builder import load_pretrained_model
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(device)
+
+    pathm = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), 'Out_weights', 'llava-onevision-qwen2-7b-si')
+    model_name = "llava_qwen"
+    tokenizer, model, image_processor, max_length = load_pretrained_model(
+        pathm, None, model_name, device_map=device, attn_implementation="sdpa")
+    model.eval()
+    model.to(device)
+
     folder_path = base_folder_path
     print(folder_path)
     if os.path.isdir(folder_path):
-        evaluate_folder(folder_path, results_dir, max_samples)
+        evaluate_folder(folder_path, results_dir, model,
+                        tokenizer, image_processor, device, max_samples)
 
 
 if __name__ == "__main__":
