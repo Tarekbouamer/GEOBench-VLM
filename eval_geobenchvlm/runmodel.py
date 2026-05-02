@@ -27,7 +27,9 @@ MODEL2SCRIPT = {
     "llavaone1": "llavaone1_cls_single.py",
     "qwen": "qwen_cls_single.py",
     "internvl": "internvl_cls_single.py",
+    "lfm": "lfm_cls_single.py",
 }
+
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -44,11 +46,13 @@ def main() -> None:
 
     # Make sure the script exists next to this dispatcher.
     if not Path(script_name).exists():
-        print(f"✗ Script '{script_name}' not found in current directory.", file=sys.stderr)
+        print(
+            f"✗ Script '{script_name}' not found in current directory.", file=sys.stderr)
         sys.exit(1)
 
     # Forward execution to the underlying script (inherits stdout/stderr).
     subprocess.run([sys.executable, script_name, *extra], check=True)
+
 
 if __name__ == "__main__":
     main()

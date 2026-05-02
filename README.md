@@ -1,7 +1,7 @@
 # GEOBench-VLM: Benchmarking Vision-Language Models for Geospatial Tasks
 
 <p><strong>🎉 Exciting News:</strong><br>
-  Our paper has been <strong>ACCEPTED to 
+  Our paper has been <strong>ACCEPTED to
   <a href="https://iccv.thecvf.com/" target="_blank">ICCV 2025 – International Conference on Computer Vision</a></strong>!
   <br>in <strong>Honolulu, Hawaii</strong>!
 </p>
@@ -11,6 +11,7 @@
 </p>
 
 #### [Muhammad Sohail Danish](https://www.linkedin.com/in/muhammad-sohail-danish/)\*, [Muhammad Akhtar Munir](https://akhtarvision.github.io/)\*, [Syed Roshaan Ali Shah](https://www.linkedin.com/in/syed-roshaan-ali-shah-b797b44a/), [Kartik Kuckreja](https://www.linkedin.com/in/kartik-kuckreja-930531221/), [Fahad Shahbaz Khan](https://sites.google.com/view/fahadkhans/home), [Paolo Fraccaro](https://research.ibm.com/people/paolo-fraccaro) , [Alexandre Lacoste](https://www.servicenow.com/research/author/alexandre-lacoste.html)   and [Salman Khan](https://salman-h-khan.github.io/)
+
 \* Equally contributing first authors
 
 #### **Mohamed bin Zayed University of AI, University College London, Linköping University, IBM Research Europe, UK, ServiceNow Research, Australian National University**
@@ -19,24 +20,26 @@
 [![Website](https://img.shields.io/badge/Project-Website-87CEEB)](http://the-ai-alliance.github.io/GEO-Bench-VLM)
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-Dataset-orange)](https://huggingface.co/datasets/aialliance/GEOBench-VLM)
 
-
-Official GitHub repository for  `GEOBench-VLM: Benchmarking Vision-Language Models for Geospatial Tasks`.
+Official GitHub repository for  `GEOBench-VLM: Benchmarking Vision-Language Models for Geospatial Tasks`
 ---
 
 ## 📢 Latest Updates
+
 - **Jun-30-25**: Code is released.
-- **Apr-04-25**: We have evaluated recent geospatial Vision-Language Models (VLMs). 
-- **Dec-02-24**: We release the benchmark dataset [huggingface link](https://huggingface.co/datasets/aialliance/GEOBench-VLM). 
+- **Apr-04-25**: We have evaluated recent geospatial Vision-Language Models (VLMs).
+- **Dec-02-24**: We release the benchmark dataset [huggingface link](https://huggingface.co/datasets/aialliance/GEOBench-VLM).
 - **Dec-02-24**: Arxiv Preprint is released [arxiv link](https://arxiv.org/abs/2411.19325). 🔥🔥
+
 ---
 
-## 🛠️ Leaderboard Coming Soon!
+## 🛠️ Leaderboard Coming Soon
 
 The leaderboard will be released shortly. Follow this repository for updates!
 
 ---
 
 ## 💡 Overview
+
 <p align="center">
    <img src="images/teaser_bench.jpg" width="1200"></a>
 </p>
@@ -45,9 +48,9 @@ The leaderboard will be released shortly. Follow this repository for updates!
 **<p align="justify"> Abstract:** While numerous recent benchmarks focus on evaluating generic Vision-Language Models (VLMs), they do not effectively address the specific challenges of geospatial applications.
 Generic VLM benchmarks are not designed to handle the complexities of geospatial data, an essential component for applications such as environmental monitoring, urban planning, and disaster management.
 Key challenges in the geospatial domain include temporal change detection, large-scale object counting, tiny object detection, and understanding relationships between entities in remote sensing imagery.
-To bridge this gap, we present GEOBench-VLM, a comprehensive benchmark specifically designed to evaluate VLMs on geospatial tasks, including scene understanding, object counting, localization, fine-grained categorization, segmentation, and temporal analysis. 
+To bridge this gap, we present GEOBench-VLM, a comprehensive benchmark specifically designed to evaluate VLMs on geospatial tasks, including scene understanding, object counting, localization, fine-grained categorization, segmentation, and temporal analysis.
 Our benchmark features over 10,000 manually verified instructions and spanning diverse visual conditions, object types, and scales.
-We evaluate several state-of-the-art VLMs to assess performance on geospatial-specific challenges. 
+We evaluate several state-of-the-art VLMs to assess performance on geospatial-specific challenges.
 The results indicate that although existing VLMs demonstrate potential, they face challenges when dealing with geospatial-specific tasks, highlighting the room for further improvements.  
 Notably, the best-performing LLaVa-OneVision achieves only 41.7\% accuracy on MCQs, slightly more than GPT-4o, which is approximately
 double the random guess performance. </p>
@@ -57,6 +60,7 @@ double the random guess performance. </p>
 - **GEOBench-VLM Benchmark.**  We introduce GEOBench-VLM, a benchmark suite designed specifically for evaluating VLMs on geospatial tasks, addressing geospatial data challenges. It covers **8** broad categories and **31** sub-tasks with over **10,000** manually verified instructions.
 - **Evaluation of VLMs.** We provide a detailed evaluation of **13** state-of-the-art VLMs, including generic (open and closed-source) and geospatial-specific VLMs, highlighting their capabilities and limitations in geospatial analysis.
 - **Analysis of Geospatial Task Performance.** We analyze performance across a range of tasks, including scene classification, counting, change detection, relationship prediction, referring expression detection, segmentation, image captioning, disaster detection, and temporal analysis, among others, providing key insights that can help in improving VLMs for geospatial applications.
+
 <hr />
 
 ## 🗂️ Benchmarks Comparison
@@ -65,18 +69,16 @@ double the random guess performance. </p>
    <img src="images/benchmark-table.png" width="1200" alt="Dataset Comparison table"></a>
 </p>
 
-
 <p align="justify"> <b> <span style="color: blue;">Table</span></b>: Overview of Generic and Geospatial-specific Datasets & Benchmarks, detailing modalities (O=Optical, PAN=Panchromatic, MS=Multi-spectral, IR=Infrared, SAR=Synthetic Aperture Radar, V=Video, MI=Multi-image, BT=Bi-Temporal, MT=Multi-temporal), data sources (DRSD=Diverse RS Datasets, OSM=OpenStreetMap, GE=Google Earth, answer types (MCQ=Multiple Choice, SC=Single Choice, FF=Free-Form, BBox=Bounding Box, Seg=Segmentation Mask), and annotation types (A=Automatic, M=Manual). </p>
 
 <hr />
 
 ## 🔍 Dataset Annotation Pipeline
+
 <p align="justify"> Our pipeline integrates diverse datasets, automated tools, and manual annotation. Tasks such as scene understanding, object classification, and non-optical analysis are based on classification datasets, while GPT-4o generates unique MCQs with five options: one correct answer, one semantically similar ``closest" option, and three plausible alternatives. Spatial relationship tasks rely on manually annotated object pair relationships, ensuring consistency through cross-verification. Caption generation leverages GPT-4o, combining image, object details, and spatial interactions with manual refinement for high precision.</p>
 <p align="center">
    <img src="images/pipeline7.jpg" width="1200"></a>
 </p>
-
-
 
 <hr />
 
@@ -87,10 +89,9 @@ Performance summary of VLMs. LLaVA-OneVision achieves the average accuracy (**41
    <img src="images/benchmark_heatmap.jpg" width="1200" alt="Results Heatmap"></a>
 </p>
 
-
 ### Temporal Understanding Results
 
-VLM performance on temporal geospatial tasks. Evaluation spans crop type classification, disaster type classification, farm pond change detection (CD), land use classification, and damaged building counting. 
+VLM performance on temporal geospatial tasks. Evaluation spans crop type classification, disaster type classification, farm pond change detection (CD), land use classification, and damaged building counting.
 EarthDial performs best in land use classification, while GPT-4o achieves better performance in disaster classification and damaged building counting. Qwen2-VL stands second in disaster classification.
 
 <div align="center">
@@ -105,6 +106,7 @@ EarthDial performs best in land use classification, while GPT-4o achieves better
 </div>
 
 ### Reffering Expression Detection
+
 Referring expression detection. We report Precision on 0.5 IoU and 0.25 IoU
 <div align="center">
 
@@ -119,10 +121,7 @@ Referring expression detection. We report Precision on 0.5 IoU and 0.25 IoU
 | LHRS-Nova        | 0.0930                | 0.2423                 |
 | SkySenseGPT      | 0.1082                | 0.3224                 |
 
-
 </div>
-
-
 
 <hr />
 
@@ -157,12 +156,36 @@ Referring expression detection. We report Precision on 0.5 IoU and 0.25 IoU
   <img src="images/results-relations.jpg"  width="1200" alt="Spatial Relations">
 </p>
 
-
-
 <hr />
 
-## 📜 Citation
+## � Quick Eval (Colab)
+
+### Prerequisites
+
+- Google account with Drive access
+- HuggingFace account — add your token as a Colab Secret named **`HF_TOKEN`** (🔑 sidebar)
+
+### Steps
+
+```
+1. Open download_dataset.ipynb  →  Runtime → Run All   (once)
+2. Open any eval notebook       →  Runtime → Run All   (for evaluation)
+3. Open score_results.ipynb     →  Runtime → Run All  (to compute metrics)
+```
+
+**Everything is configured in cell 2 (CONFIG)** of each notebook — the only cell you need to edit:
+
+```python
+DRIVE_BASE  = '/content/drive/MyDrive/GEOBench'   # your Drive folder
+MAX_SAMPLES = None   # set to 10 for a quick smoke test
+```
+
+---
+
+## �📜 Citation
+
 If you find our work and this repository useful, please consider giving our repo a star and citing our paper as follows:
+
 ```bibtex
 @inproceedings{danish2025geobenchvlm,
   title     = {GEOBench-VLM: Benchmarking Vision-Language Models for Geospatial Tasks},
@@ -176,11 +199,9 @@ If you find our work and this repository useful, please consider giving our repo
 }
 ```
 
-
-
-
 ## 📨 Contact
-If you have any questions, please create an issue on this repository or contact at muhammad.sohail@mbzuai.ac.ae.
+
+If you have any questions, please create an issue on this repository or contact at <muhammad.sohail@mbzuai.ac.ae>.
 
 ---
 [<img src="images/MBZUAI_logo.png" width="290" height="85">](https://mbzuai.ac.ae)

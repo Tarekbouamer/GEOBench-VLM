@@ -1,42 +1,24 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from transformers import AutoProcessor, AutoModelForImageTextToText
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-import requests
-from io import BytesIO
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor
-import pandas as pd
+from PIL import Image
 import os
 import json
+import pandas as pd
 from tqdm import tqdm
-from PIL import Image
-from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
 from collections import defaultdict
-
-
-# # Set environment variables
-# os.environ['TORCH_USE_CUDA_DSA'] = '1'
-# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-
-# print("TORCH_USE_CUDA_DSA:", os.getenv('TORCH_USE_CUDA_DSA'))
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 print(device)
-model_id = "llava-hf/llava-v1.6-vicuna-7b-hf"
 
-cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
-    __file__))), 'Out_weights', 'models--llava-hf--llava-v1.6-vicuna-7b-hf')
-pthm = cache_dir
+pth_m = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), 'Out_weights', 'LFM2.5-VL-450M')
 
-processor = LlavaNextProcessor.from_pretrained(pthm)
-model = LlavaNextForConditionalGeneration.from_pretrained(
-    pthm, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
-
-# processor = LlavaNextProcessor.from_pretrained(pthm)
-# model = LlavaNextForConditionalGeneration.from_pretrained(pthm, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True)
-
-model.to(device)
+model = AutoModelForImageTextToText.from_pretrained(
+    pth_m, device_map="cuda", torch_dtype=torch.bfloat16).eval()
 
 
 class MultimodalDataset(Dataset):
@@ -60,15 +42,7 @@ class MultimodalDataset(Dataset):
         cls_description = self.dataframe.iloc[idx]['Cls_Description']
         options = self.dataframe.iloc[idx]['Options']
 
-        try:
-            # ima_path = image_url
-            image = Image.open(image_url).convert('RGB')
-        except Exception as e:
-            print(f"Error in loading image: {e}")
-            print(f"Image URL: {image_url}")
-
         return {
-            'image': image,
             'image_path': image_url,
             'question': question,
             'answer': answer,
@@ -83,46 +57,25 @@ class MultimodalDataset(Dataset):
         }
 
 
-# Load data from XLSX file
-def load_data(file_path):
-    df = pd.read_excel(file_path)
-    return df
-
-
-# Define the transforms for the images
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),  # Resize all images to 224x224
-    transforms.ToTensor(),  # Convert to Tensor, values between 0 and 1
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
 ])
 
 
 def collate_fn(batch):
-    image = [item['image'] for item in batch]
-    images = [item['image_path'] for item in batch]
-    questions = [item['question'] for item in batch]
-    answers = [item['answer'] for item in batch]
-    question_types = [item['question_type'] for item in batch]
-    question_numbers = [item['question_number'] for item in batch]
-    ground_truth_options = [item['ground_truth_option'] for item in batch]
-    options_lists = [item['options_list'] for item in batch]
-    tasks = [item['task'] for item in batch]
-    question_ids = [item['question_id'] for item in batch]
-    cls_descriptions = [item['cls_description'] for item in batch]
-    options = [item['options'] for item in batch]
-
     return {
-        'image': image,
-        'images': images,
-        'questions': questions,
-        'answers': answers,
-        'question_type': question_types,
-        'question_number': question_numbers,
-        'ground_truth_option': ground_truth_options,
-        'options_list': options_lists,
-        'task': tasks,
-        'question_id': question_ids,
-        'cls_description': cls_descriptions,
-        'options': options
+        'images': [item['image_path'] for item in batch],
+        'questions': [item['question'] for item in batch],
+        'answers': [item['answer'] for item in batch],
+        'question_type': [item['question_type'] for item in batch],
+        'question_number': [item['question_number'] for item in batch],
+        'ground_truth_option': [item['ground_truth_option'] for item in batch],
+        'options_list': [item['options_list'] for item in batch],
+        'task': [item['task'] for item in batch],
+        'question_id': [item['question_id'] for item in batch],
+        'cls_description': [item['cls_description'] for item in batch],
+        'options': [item['options'] for item in batch],
     }
 
 
@@ -145,56 +98,56 @@ def evaluate(model, dataloader, processor, device):
         })
 
         for batch in dataloader:
-            for image, img_path, question, answer, question_type, question_number, ground_truth_option, options_list, task, question_id, cls_description, options in zip(
-                batch['image'], batch['images'], batch['questions'], batch['answers'], batch['question_type'], batch['question_number'], batch[
-                    'ground_truth_option'], batch['options_list'], batch['task'], batch['question_id'], batch['cls_description'], batch['options']
+            for img_path, question, answer, question_type, question_number, ground_truth_option, options_list, task, question_id, cls_description, options in zip(
+                batch['images'], batch['questions'], batch['answers'], batch['question_type'],
+                batch['question_number'], batch['ground_truth_option'], batch['options_list'],
+                batch['task'], batch['question_id'], batch['cls_description'], batch['options']
             ):
                 try:
                     if question_type == "Multiple Choice Questions":
                         choices = "Options: " + options
-                        prompt = f"For the given the Multiple Choice Question Answer below, analyze the question and answer strictly from one of the options below. Strictly answer the choice only. No additional text. Provide only the letter (A., B., C., D. or E.) corresponding to the correct answer for the multiple-choice question given. {cls_description}\n{question}\n{choices}"
+                        prompt = (
+                            f"For the given the Multiple Choice Question Answer below, analyze the question "
+                            f"and answer strictly from one of the options below. Strictly answer the choice only. "
+                            f"No additional text. Provide only the letter (A., B., C., D. or E.) corresponding to "
+                            f"the correct answer for the multiple-choice question given. {cls_description}\n{question}\n{choices}"
+                        )
                     else:
                         prompt = question
 
+                    image = Image.open(img_path).convert("RGB")
+
                     conversation = [
                         {
-
                             "role": "user",
                             "content": [
-                                    {"type": "text", "text": prompt},
-                                    {"type": "image"},
+                                {"type": "image", "image": image},
+                                {"type": "text", "text": prompt},
                             ],
-                        },
+                        }
                     ]
-                    prompt = processor.apply_chat_template(
-                        conversation, add_generation_prompt=True)
-                    inputs = processor(
-                        images=image, text=prompt, return_tensors="pt").to(device)
 
-                    # autoregressively complete prompt
-                    output = model.generate(**inputs, max_new_tokens=200)
-
-                    response = processor.decode(
-                        output[0], skip_special_tokens=True)
-
-                    # print (response)
-
-                    if "ASSISTANT:" in response:
-                        response = response.split("ASSISTANT:")[-1].strip()
                     print(img_path)
 
-                    # Extract only the first valid letter (A, B, C, D, or E)
-                    valid_choices = {"A", "B", "C", "D", "E"}
-                    predicted_answer = response[0] if response and response[0] in valid_choices else None
+                    inputs = processor.apply_chat_template(
+                        conversation,
+                        add_generation_prompt=True,
+                        return_tensors="pt",
+                        return_dict=True,
+                        tokenize=True,
+                    ).to(device)
 
-                    # print (predicted_answer)
+                    outputs = model.generate(**inputs, max_new_tokens=128)
+                    input_len = inputs["input_ids"].shape[1]
+                    predicted_answer = processor.batch_decode(
+                        outputs[:, input_len:], skip_special_tokens=True
+                    )
 
                     key = question_number
                     results_dict[key]["predicted_answers"].extend(
                         predicted_answer)
                     results_dict[key]["questions"].append(question)
                     results_dict[key]["ground_truth"] = answer
-                    # results_dict[key]["choices"] = choices
                     results_dict[key]["name_images"].append(img_path)
                     results_dict[key]["ground_truth_option"] = ground_truth_option
                     results_dict[key]["options_list"] = options_list
@@ -202,9 +155,6 @@ def evaluate(model, dataloader, processor, device):
                     results_dict[key]["question_id"] = question_id
                     results_dict[key]["cls_description"] = cls_description
                     results_dict[key]["options"] = options
-
-                    # print(results_dict)
-                    # print(results_dict.values())
 
                 except Exception as e:
                     print(f"Error in prediction: {e}")
@@ -217,11 +167,9 @@ def evaluate(model, dataloader, processor, device):
 
 def evaluate_folder(folder_path, max_samples=None):
     qa_file_path = None
-    for filename in ["qa.json"]:
-        potential_path = os.path.join(folder_path, "Single", filename)
-        if os.path.exists(potential_path):
-            qa_file_path = potential_path
-            break
+    potential_path = os.path.join(folder_path, "Single", "qa.json")
+    if os.path.exists(potential_path):
+        qa_file_path = potential_path
 
     if qa_file_path is None:
         print(f"No matching qa file found in {folder_path}. Skipping.")
@@ -235,7 +183,7 @@ def evaluate_folder(folder_path, max_samples=None):
     mainp = folder_path
     data_rows = []
 
-    for i, question in enumerate(data):  # Directly iterate over JSON list
+    for i, question in enumerate(data):
         image_p = os.path.join(mainp, question.get("image_path", ""))
         ground_truth = question.get("ground_truth", "")
         ground_truth_option = question.get("ground_truth_option", "")
@@ -261,16 +209,15 @@ def evaluate_folder(folder_path, max_samples=None):
                 "Cls_Description": cls_description
             })
 
-    # Create DataFrame from data_rows and prepare the dataloader
     df = pd.DataFrame(data_rows)
-    # print (df)
     dataset = MultimodalDataset(df, transform=transform)
     dataloader = DataLoader(dataset, batch_size=32,
                             shuffle=False, collate_fn=collate_fn)
 
+    processor = AutoProcessor.from_pretrained(pth_m)
     scores = evaluate(model, dataloader, processor, device)
 
-    result_folder = os.path.join(folder_path, "Results-llava1pt6-countcls")
+    result_folder = os.path.join(folder_path, "Results-lfm25-vl")
     os.makedirs(result_folder, exist_ok=True)
 
     result_file = os.path.join(
@@ -289,14 +236,13 @@ def evaluate_folder(folder_path, max_samples=None):
     print(f"Results saved successfully for folder {folder_path}.")
 
 
-# Main function to iterate over folders
 def main(base_folder_path, max_samples=None):
-    # for folder in os.listdir(base_folder_path):
-    # folder_path = os.path.join(base_folder_path, folder)
     folder_path = base_folder_path
     print(folder_path)
     if os.path.isdir(folder_path):
         evaluate_folder(folder_path, max_samples)
+    else:
+        print(f"{folder_path} is not a directory. Skipping.")
 
 
 if __name__ == "__main__":

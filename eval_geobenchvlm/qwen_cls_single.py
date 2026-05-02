@@ -1,8 +1,10 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from transformers import AutoTokenizer, AutoProcessor
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
-from transformers import AutoTokenizer, AutoModelForCausalLM,Qwen2VLForConditionalGeneration
+from transformers import AutoTokenizer, AutoModelForCausalLM, Qwen2VLForConditionalGeneration
 import pandas as pd
 import os
 import json
@@ -13,23 +15,23 @@ from collections import defaultdict
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-print (device)
+print(device)
 
-from transformers import AutoTokenizer, AutoProcessor
 
 # tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
 # model = AutoModelForCausalLM.from_pretrained("google/gemma-7b",device_map='auto')
 
-pth_m = '/Out_weights/Qwen2-VL-7B-Instruct'
+pth_m = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), 'Out_weights', 'Qwen2-VL-7B-Instruct')
 
 model_id = "Qwen/Qwen2-VL-7B-Instruct"
 # tokenizer = AutoTokenizer.from_pretrained(pth_m, trust_remote_code=True)
 # model = Qwen2VLForConditionalGeneration.from_pretrained(model_id, device_map="cuda:2", trust_remote_code=True, attn_implementation="flash_attention_2", torch_dtype=torch.bfloat16).eval()
 
-model = Qwen2VLForConditionalGeneration.from_pretrained(pth_m, device_map="cuda", trust_remote_code=True, torch_dtype=torch.bfloat16).eval()
+model = Qwen2VLForConditionalGeneration.from_pretrained(
+    pth_m, device_map="cuda", trust_remote_code=True, torch_dtype=torch.bfloat16).eval()
 # model = "NULL"
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class MultimodalDataset(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -57,7 +59,7 @@ class MultimodalDataset(Dataset):
         except Exception as e:
             print(f"Error in loading image: {e}")
             print(f"Image URL: {image_url}")
-        
+
         return {
             'image_path': ima_path,
             'question': question,
@@ -78,11 +80,13 @@ def load_data(file_path):
     df = pd.read_excel(file_path)
     return df
 
+
 # Define the transforms for the images
 transform = transforms.Compose([
     transforms.Resize((224, 224)),  # Resize all images to 224x224
     transforms.ToTensor(),  # Convert to Tensor, values between 0 and 1
 ])
+
 
 def collate_fn(batch):
     images = [item['image_path'] for item in batch]
@@ -111,6 +115,7 @@ def collate_fn(batch):
         'options': options
     }
 
+
 def evaluate(model, dataloader, processor, device):
     model.eval()
     results = []
@@ -132,7 +137,8 @@ def evaluate(model, dataloader, processor, device):
 
         for batch in dataloader:
             for img_path, question, answer, question_type, question_number, ground_truth_option, options_list, task, question_id, cls_description, options in zip(
-                batch['images'], batch['questions'], batch['answers'], batch['question_type'], batch['question_number'], batch['ground_truth_option'], batch['options_list'], batch['task'], batch['question_id'], batch['cls_description'], batch['options']
+                batch['images'], batch['questions'], batch['answers'], batch['question_type'], batch['question_number'], batch[
+                    'ground_truth_option'], batch['options_list'], batch['task'], batch['question_id'], batch['cls_description'], batch['options']
             ):
                 try:
                     if question_type == "Multiple Choice Questions":
@@ -150,10 +156,11 @@ def evaluate(model, dataloader, processor, device):
                             ],
                         }
                     ]
-                    
-                    print (img_path)
 
-                    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+                    print(img_path)
+
+                    text = processor.apply_chat_template(
+                        messages, tokenize=False, add_generation_prompt=True)
                     image_inputs, video_inputs = process_vision_info(messages)
                     inputs = processor(
                         text=[text],
@@ -163,15 +170,18 @@ def evaluate(model, dataloader, processor, device):
                         return_tensors="pt",
                     ).to(device)
 
-                    generated_ids = model.generate(**inputs, max_new_tokens=128)
+                    generated_ids = model.generate(
+                        **inputs, max_new_tokens=128)
                     predicted_answer = processor.batch_decode(
-                        [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)],
+                        [out_ids[len(in_ids):] for in_ids, out_ids in zip(
+                            inputs.input_ids, generated_ids)],
                         skip_special_tokens=True,
                         clean_up_tokenization_spaces=False,
                     )
 
                     key = question_number
-                    results_dict[key]["predicted_answers"].extend(predicted_answer)
+                    results_dict[key]["predicted_answers"].extend(
+                        predicted_answer)
                     results_dict[key]["questions"].append(question)
                     results_dict[key]["ground_truth"] = answer
                     # results_dict[key]["choices"] = choices
@@ -182,37 +192,39 @@ def evaluate(model, dataloader, processor, device):
                     results_dict[key]["question_id"] = question_id
                     results_dict[key]["cls_description"] = cls_description
                     results_dict[key]["options"] = options
-                    
+
                     # print(results_dict)
                     # print(results_dict.values())
 
                 except Exception as e:
                     print(f"Error in prediction: {e}")
                     print(f"Question: {question}")
-            
+
         results.extend(results_dict.values())
-    
+
     return results
 
 
-def evaluate_folder(folder_path):
+def evaluate_folder(folder_path, max_samples=None):
     qa_file_path = None
     for filename in ["qa.json"]:
         potential_path = os.path.join(folder_path, "Single", filename)
         if os.path.exists(potential_path):
             qa_file_path = potential_path
             break
-    
+
     if qa_file_path is None:
         print(f"No matching qa file found in {folder_path}. Skipping.")
         return
-    
+
     with open(qa_file_path, 'r') as file:
         data = json.load(file)
-    
+    if max_samples:
+        data = data[:max_samples]
+
     mainp = folder_path
     data_rows = []
-    
+
     for i, question in enumerate(data):  # Directly iterate over JSON list
         image_p = os.path.join(mainp, question.get("image_path", ""))
         ground_truth = question.get("ground_truth", "")
@@ -222,7 +234,7 @@ def evaluate_folder(folder_path):
         question_id = question.get("question_id", "")
         cls_description = question.get("cls_description", "")
         options_str = question.get("options", "")
-        
+
         for prompt in question.get("prompts", []):
             data_rows.append({
                 "Question_Number": i,
@@ -238,21 +250,24 @@ def evaluate_folder(folder_path):
                 "Question_ID": question_id,
                 "Cls_Description": cls_description
             })
-    
+
     df = pd.DataFrame(data_rows)
     dataset = MultimodalDataset(df, transform=transform)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
-    
+    dataloader = DataLoader(dataset, batch_size=32,
+                            shuffle=False, collate_fn=collate_fn)
+
     processor = AutoProcessor.from_pretrained(pth_m)
     # processor = "NULL"
     scores = evaluate(model, dataloader, processor, device)
     # xx
     result_folder = os.path.join(folder_path, "Results-qwen2-countcls")
     os.makedirs(result_folder, exist_ok=True)
-    
-    result_file = os.path.join(result_folder, f"evaluation_results_{os.path.basename(folder_path)}.json")
-    result_filet = os.path.join(result_folder, f"evaluation_results_{os.path.basename(folder_path)}.txt")
-    
+
+    result_file = os.path.join(
+        result_folder, f"evaluation_results_{os.path.basename(folder_path)}.json")
+    result_filet = os.path.join(
+        result_folder, f"evaluation_results_{os.path.basename(folder_path)}.txt")
+
     try:
         with open(result_file, "w") as f:
             json.dump(scores, f, indent=4, default=str)
@@ -260,18 +275,27 @@ def evaluate_folder(folder_path):
         print(f"Error in saving results: {e}")
         with open(result_filet, "w") as f:
             f.write(str(scores))
-    
+
     print(f"Results saved successfully for folder {folder_path}.")
-    
+
 
 # Main function to iterate over folders
-def main(base_folder_path):
+def main(base_folder_path, max_samples=None):
     # for folder in os.listdir(base_folder_path):
     # folder_path = os.path.join(base_folder_path, folder)
     folder_path = base_folder_path
     print(folder_path)
     if os.path.isdir(folder_path):
-        evaluate_folder(folder_path)
+        evaluate_folder(folder_path, max_samples)
+    else:
+        print(f"{folder_path} is not a directory. Skipping.")
+
 
 if __name__ == "__main__":
-    main("/datasets/GEOBench-VLM")
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_path", default="/datasets/GEOBench-VLM")
+    parser.add_argument("--max_samples", type=int, default=None,
+                        help="Limit number of questions (for smoke testing)")
+    args = parser.parse_args()
+    main(args.data_path, args.max_samples)
