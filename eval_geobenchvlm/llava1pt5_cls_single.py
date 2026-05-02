@@ -267,8 +267,10 @@ def evaluate_folder(folder_path, results_dir, max_samples=None):
     os.makedirs(result_folder, exist_ok=True)
 
     split_name = os.path.basename(folder_path)
-    result_file = os.path.join(result_folder, f"llava-1.5-7b_{split_name}.json")
-    result_filet = os.path.join(result_folder, f"llava-1.5-7b_{split_name}.txt")
+    result_file = os.path.join(
+        result_folder, f"llava-1.5-7b_{split_name}.json")
+    result_filet = os.path.join(
+        result_folder, f"llava-1.5-7b_{split_name}.txt")
 
     try:
         with open(result_file, "w") as f:

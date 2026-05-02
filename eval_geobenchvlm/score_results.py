@@ -67,7 +67,8 @@ def find_result_files(results_dir: str) -> dict[str, str]:
         json_files = [f for f in os.listdir(model_dir) if f.endswith(".json")]
         if json_files:
             display = MODEL_DISPLAY_NAMES.get(slug, slug)
-            found[display] = [os.path.join(model_dir, f) for f in sorted(json_files)]
+            found[display] = [os.path.join(model_dir, f)
+                              for f in sorted(json_files)]
     return found
 
 
