@@ -10,6 +10,8 @@ from PIL import Image
 import copy
 from collections import defaultdict
 
+from llava_next_compat import load_llava_runtime
+
 
 class MultimodalDataset(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -98,10 +100,12 @@ def collate_fn(batch):
     }
 
 
-def evaluate(model, tokenizer, image_processor, dataloader, device):
-    from llava.mm_utils import process_images, tokenizer_image_token
-    from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN
-    from llava.conversation import conv_templates, SeparatorStyle
+def evaluate(model, tokenizer, image_processor, dataloader, device, llava_runtime):
+    process_images = llava_runtime["process_images"]
+    tokenizer_image_token = llava_runtime["tokenizer_image_token"]
+    IMAGE_TOKEN_INDEX = llava_runtime["IMAGE_TOKEN_INDEX"]
+    DEFAULT_IMAGE_TOKEN = llava_runtime["DEFAULT_IMAGE_TOKEN"]
+    conv_templates = llava_runtime["conv_templates"]
     model.eval()
     results = []
 
@@ -195,7 +199,7 @@ def evaluate(model, tokenizer, image_processor, dataloader, device):
     return results
 
 
-def evaluate_folder(folder_path, results_dir, model, tokenizer, image_processor, device, max_samples=None):
+def evaluate_folder(folder_path, results_dir, model, tokenizer, image_processor, device, llava_runtime, max_samples=None):
     qa_file_path = None
     for filename in ["qa.json"]:
         potential_path = os.path.join(folder_path, "Single", filename)
@@ -248,7 +252,8 @@ def evaluate_folder(folder_path, results_dir, model, tokenizer, image_processor,
     dataloader = DataLoader(dataset, batch_size=1,
                             shuffle=False, collate_fn=collate_fn)
 
-    scores = evaluate(model, tokenizer, image_processor, dataloader, device)
+    scores = evaluate(model, tokenizer, image_processor,
+                      dataloader, device, llava_runtime)
     result_folder = os.path.join(results_dir, "llava-onevision-7b")
     os.makedirs(result_folder, exist_ok=True)
 
@@ -271,10 +276,11 @@ def evaluate_folder(folder_path, results_dir, model, tokenizer, image_processor,
 
 # Main function to iterate over folders
 def main(base_folder_path, results_dir, max_samples=None):
-    from llava.model.builder import load_pretrained_model
-
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
+
+    llava_runtime = load_llava_runtime()
+    load_pretrained_model = llava_runtime["load_pretrained_model"]
 
     pathm = os.path.join(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__))), 'Out_weights', 'llava-onevision-qwen2-7b-si')
@@ -288,7 +294,7 @@ def main(base_folder_path, results_dir, max_samples=None):
     print(folder_path)
     if os.path.isdir(folder_path):
         evaluate_folder(folder_path, results_dir, model,
-                        tokenizer, image_processor, device, max_samples)
+                        tokenizer, image_processor, device, llava_runtime, max_samples)
 
 
 if __name__ == "__main__":
