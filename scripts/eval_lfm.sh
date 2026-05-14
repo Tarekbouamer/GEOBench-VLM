@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# Default: /content/GEOBench-VLM on Colab, override via DATA_PATH env var
-DATA_PATH="${DATA_PATH:-/content/GEOBench-VLM}"
-RESULTS_DIR="${RESULTS_DIR:-$REPO_ROOT/results}"
+DATASET_DIR="/home/torres/datasets/GEO/"
+RESULTS_DIR="/home/torres/projects/GEOBench-VLM/results"
 
-cd "$REPO_ROOT/eval_geobenchvlm"
-python runmodel.py lfm --data_path "$DATA_PATH" --results_dir "$RESULTS_DIR"
+uv run --group lfm geobench-single --model lfm --data "$DATASET_DIR" \
+--results "$RESULTS_DIR" \
+--max-samples 10 \
+--batch-size 1

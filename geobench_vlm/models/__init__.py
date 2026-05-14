@@ -1,0 +1,3 @@
+from .registry import SINGLE_MODELS, TEMPORAL_MODELS
+
+__all__ = ["SINGLE_MODELS", "TEMPORAL_MODELS"]

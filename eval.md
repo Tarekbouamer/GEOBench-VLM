@@ -1,27 +1,20 @@
-<h1>This repository provides the <strong>PyTorch implementation</strong> of our work <strong>GEOBench-VLM: Benchmarking Vision-Language Models for Geospatial Tasks</strong>.</h1>
+# GEOBench-VLM Evaluation Guide
 
+## Setup
 
-### Environment Setup
+Follow the [Installation](README.md#-installation) section in the README to set up the environment with `uv`.
 
-🔗 Access and set up the following vision-language models: [Qwen2.5-VL (QwenLM)](https://github.com/QwenLM/Qwen2.5-VL), [InternVL2 (OpenGVLab)](https://github.com/OpenGVLab/InternVL), [LLaVA 1.5 / 1.6 (haotian-liu)](https://github.com/haotian-liu/LLaVA), and [LLaVA-OneVision (LLaVA-VL)](https://github.com/LLaVA-VL/LLaVA-NeXT). Each repository includes environment setup instructions.
+## Model Weights
 
-<hr>
+Download the pretrained model weights and place them under `Out_weights/`:
 
-### 🔻 Model Weights Download
-
-Download the following pretrained model weights and place them in the `Out_weights/` folder:
-
-- [LLaVA 1.6 (Vicuna-7B)](https://huggingface.co/llava-hf/llava-v1.6-vicuna-7b-hf)  
-- [LLaVA 1.5 (Vicuna-7B)](https://huggingface.co/llava-hf/llava-1.5-7b-hf)  
-- [InternVL2 (8B)](https://huggingface.co/OpenGVLab/InternVL2-8B)  
-- [Qwen2-VL (7B Instruct)](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct)  
-- [LLaVA-OneVision (llava-onevision)](https://huggingface.co/lmms-lab/llava-onevision-qwen2-7b-si)
-
-📁 After downloading, ensure all models are stored under the `Out_weights/` directory for proper loading during inference.
-
-<hr>
-
-All downloaded folders should follow this structure:
+| Model | HuggingFace Link |
+|---|---|
+| LLaVA 1.5 (Vicuna-7B) | [llava-1.5-7b-hf](https://huggingface.co/llava-hf/llava-1.5-7b-hf) |
+| LLaVA 1.6 (Vicuna-7B) | [llava-v1.6-vicuna-7b-hf](https://huggingface.co/llava-hf/llava-v1.6-vicuna-7b-hf) |
+| InternVL2 (8B) | [InternVL2-8B](https://huggingface.co/OpenGVLab/InternVL2-8B) |
+| Qwen2-VL (7B Instruct) | [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct) |
+| LLaVA-OneVision | [llava-onevision-qwen2-7b-si](https://huggingface.co/lmms-lab/llava-onevision-qwen2-7b-si) |
 
 ```
 Out_weights/
@@ -29,46 +22,69 @@ Out_weights/
 ├── llava-v1.6-vicuna-7b-hf/
 ├── InternVL2-8B/
 ├── Qwen2-VL-7B-Instruct/
-├── llava-onevision-qwen2-7b-si/
+└── llava-onevision-qwen2-7b-si/
 ```
 
-### For Single Image
+---
 
-Now follow the command given from folder <strong>[eval_geobenchvlm](eval_geobenchvlm)</strong>
+## Single-Image Evaluation
 
+```bash
+uv run geobench-single --model <model-key> --data <path/to/split> --results <output/dir>
 ```
-python runmodel.py <model-key> --data_path /datasets/GEOBench-VLM
-```
-Available <model-key> options:
 
-| Model Name      | Model Key   |
-| --------------- | ----------- |
-| LLaVA 1.5       | `llava1pt5` |
-| LLaVA 1.6       | `llava1pt6` |
+| Model | Key |
+|---|---|
+| LLaVA 1.5 | `llava1pt5` |
+| LLaVA 1.6 | `llava1pt6` |
 | LLaVA-OneVision | `llavaone1` |
-| Qwen2-VL        | `qwen`      |
-| InternVL2       | `internvl`  |
+| Qwen2-VL | `qwen` |
+| InternVL2 | `internvl` |
+| LFM-2.5 | `lfm` |
 
-Example:
+**Example:**
 
+```bash
+uv run geobench-single --model qwen --data data/GEOBench-VLM --results results/
 ```
-python runmodel.py qwen --data_path /datasets/GEOBench-VLM
+
+**Or use the provided scripts** (set `DATA_PATH` to your dataset location):
+
+```bash
+DATA_PATH=/path/to/GEOBench-VLM bash scripts/eval_qwen.sh
+DATA_PATH=/path/to/GEOBench-VLM bash scripts/eval_lfm.sh
+DATA_PATH=/path/to/GEOBench-VLM bash scripts/eval_llavaone1.sh
 ```
 
-### For Temporal
+**Optional flags:**
 
-Now follow the command given from folder <strong>[eval_geobenchvlm temporal](eval_geobenchvlm/temporal)</strong>
+| Flag | Description |
+|---|---|
+| `--score` / `-s` | Compute and print accuracy after inference |
+| `--max-samples N` | Limit to N questions (smoke test) |
+| `--batch-size N` | DataLoader batch size (default: 32) |
 
-Available <model-key> options:
+---
 
-| Model Name      | Model Key   |
-| --------------- | ----------- |
-| Qwen2-VL        | `qwen`      |
+## Temporal Evaluation
+
+```bash
+uv run geobench-temporal --model <model-key> --data <path/to/split> --results <output/dir>
+```
+
+| Model | Key |
+|---|---|
+| Qwen2-VL | `qwen` |
 | LLaVA-OneVision | `llavaone1` |
 
+**Example:**
+
+```bash
+uv run geobench-temporal --model qwen --data data/GEOBench-VLM --results results/
 ```
-python run_temporal.py qwen --data_path /datasets/GEOBench-VLM
-```
 
+---
 
+## Scoring
 
+Scoring is no longer exposed as a CLI command in this repository.

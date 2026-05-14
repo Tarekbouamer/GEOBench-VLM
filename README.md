@@ -158,6 +158,55 @@ Referring expression detection. We report Precision on 0.5 IoU and 0.25 IoU
 
 <hr />
 
+## 🔧 Installation
+
+[uv](https://docs.astral.sh/uv/) is the recommended package manager. It handles PyTorch CUDA index resolution automatically via the `[tool.uv.sources]` config in `pyproject.toml`.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/The-AI-Alliance/GEO-Bench-VLM.git
+cd GEO-Bench-VLM
+```
+
+### 2. Install uv (if not already installed)
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 3. Install the package
+
+`uv` creates a virtual environment automatically and pulls `torch==2.7.1` / `torchvision==0.22.1` with CUDA 12.8 wheels, along with all model dependencies:
+
+```bash
+uv sync
+```
+
+For model-specific runs, install only the required dependency group:
+
+```bash
+uv sync --group qwen
+uv sync --group lfm
+uv sync --group llava
+uv sync --group llavaone1
+uv sync --group internvl
+```
+
+Reliability notes:
+
+- Evaluation is fail-fast: the run stops on the first inference error to avoid wasting GPU compute.
+- The `llavaone1` dependency is pinned to a specific LLaVA-NeXT commit for reproducible installs.
+
+> **Using pip instead?** Install PyTorch manually first (pip won't read `[tool.uv.sources]`):
+>
+> ```bash
+> pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu128
+> pip install -e .
+> ```
+
+---
+
 ## � Quick Eval (Colab)
 
 ### Prerequisites
