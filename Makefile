@@ -5,6 +5,7 @@ dev:
 
 clean:
 	pip uninstall -y geobench-vlm
+	rm -rf dist build geobench_vlm.egg-info
 
 ruff:
 	ruff format .

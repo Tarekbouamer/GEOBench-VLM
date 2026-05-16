@@ -90,8 +90,7 @@ class InternVL2(VLMModel):
         if self.mode == "temporal":
             if not isinstance(img_path, list) or len(img_path) < 2:
                 raise ValueError(
-                    "Temporal mode requires img_path "
-                    "to be a list of at least 2 images."
+                    "Temporal mode requires img_path to be a list of at least 2 images."
                 )
             raise NotImplementedError(
                 "Temporal mode is not yet implemented for InternVL2. "

@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import torch
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
 def run_eval(model, dataloader: DataLoader, device: torch.device) -> list[dict]:
@@ -61,18 +61,16 @@ def run_eval(model, dataloader: DataLoader, device: torch.device) -> list[dict]:
                     )
                 except Exception as e:
                     raise RuntimeError(
-                        "Inference failed; stopping early to avoid wasting GPU time. "
+                        "Inference failed "
                         f"image={img_path} question_id={question_id} task={task}"
                     ) from e
 
                 key = question_number
                 if predicted_answer is not None:
                     if isinstance(predicted_answer, list):
-                        results_dict[key]["predicted_answers"].extend(
-                            predicted_answer)
+                        results_dict[key]["predicted_answers"].extend(predicted_answer)
                     else:
-                        results_dict[key]["predicted_answers"].append(
-                            predicted_answer)
+                        results_dict[key]["predicted_answers"].append(predicted_answer)
                 results_dict[key]["questions"].append(question)
                 results_dict[key]["ground_truth"] = answer
                 results_dict[key]["name_images"].append(img_path)

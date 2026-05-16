@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-DATASET_DIR="/home/torres/datasets/GEO/"
-RESULTS_DIR="/home/torres/projects/GEOBench-VLM/results"
+[ -f .env ] && { set -o allexport; source .env; set +o allexport; }
+RESULTS_DIR="${RESULTS_DIR:-results}"
 
-uv run --group qwen geobench-single --model qwen --data "$DATASET_DIR" \
+uv run --group qwen geobench-single --model qwen \
+    --data "$DATASET_DIR" \
     --results "$RESULTS_DIR" \
-    --max-samples 10 \
+    --max-samples 500 \
     --batch-size 1

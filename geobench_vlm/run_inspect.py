@@ -21,9 +21,9 @@ def resolve_image(data_path: str, image_id: str | None) -> tuple[str, dict]:
     # qa annotations
     qa_path = single_root / "qa.json"
 
-    assert (
-        qa_path.is_file()
-    ), f"No qa.json found at {qa_path}. Expected layout: {data_path}/Single/qa.json"
+    assert qa_path.is_file(), (
+        f"No qa.json found at {qa_path}. Expected layout: {data_path}/Single/qa.json"
+    )
 
     with open(qa_path) as f:
         qa_entries: list[dict] = json.load(f)

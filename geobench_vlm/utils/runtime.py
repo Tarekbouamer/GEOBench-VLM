@@ -12,7 +12,7 @@ def support_flash_attn() -> bool:
         return False
 
     # at least 8
-    major, _ = torch.get_device_capability()
+    major, _ = torch.cuda.get_device_capability()
 
     # check install
     flash_attn_installed = importlib.util.find_spec("flash_attn") is not None

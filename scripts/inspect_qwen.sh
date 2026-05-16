@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
+set -e
 
-DATASET_DIR="/home/torres/datasets/GEO/"
+[ -f .env ] && { set -o allexport; source .env; set +o allexport; }
 
-uv run --group qwen geobench-inspect --model qwen --data "$DATASET_DIR"
+uv run --group qwen geobench-inspect --model qwen \
+    --data "$DATASET_DIR"

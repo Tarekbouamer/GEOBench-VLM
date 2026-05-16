@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-DATASET_DIR="/home/torres/datasets/GEO/"
-RESULTS_DIR="/home/torres/projects/GEOBench-VLM/results"
+[ -f .env ] && { set -o allexport; source .env; set +o allexport; }
+RESULTS_DIR="${RESULTS_DIR:-results}"
 
 uv run --group llavaone1 geobench-single --model llavaone1 \
     --data "$DATASET_DIR" \
-    --results "$RESULTS_DIR"
+    --results "$RESULTS_DIR" \
+    --max-samples 500 \
+    --batch-size 1

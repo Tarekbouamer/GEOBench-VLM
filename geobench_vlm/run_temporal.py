@@ -1,4 +1,5 @@
 import os
+from time import perf_counter
 
 import torch
 import typer
@@ -67,8 +68,10 @@ def main(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # inference
+    start_time = perf_counter()
     typer.echo("[run_temporal] Running inference ...")
     predictions = run_eval(vlm, loader, device)
+    infer_time = perf_counter() - start_time
 
     # save
     split_name = os.path.basename(os.path.normpath(data))
@@ -86,7 +89,16 @@ def main(
         predictions, results, vlm.model_slug, "temporal", split_name
     )
     mfst_path = write_manifest(
-        results, vlm.model_slug, "temporal", data, split_name, score_summary
+        results,
+        vlm.model_slug,
+        "temporal",
+        data,
+        split_name,
+        score_summary,
+        batch_size=batch_size,
+        sample_count=len(dataset),
+        infer_time=infer_time,
+        predictions_path=pred_path,
     )
     typer.echo(f"[run_temporal] Predictions → {pred_path}")
     typer.echo(f"[run_temporal] Manifest    → {mfst_path}")
